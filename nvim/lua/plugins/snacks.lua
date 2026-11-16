@@ -672,7 +672,75 @@ return {
 		{
 			"<leader>sq",
 			function()
-				Snacks.picker.qflist()
+				local quickfix
+
+				Snacks.picker.qflist({
+					finder = function(opts, ctx)
+						quickfix = vim.fn.getqflist({ id = 0, changedtick = 0, items = 0 })
+						local items = require("snacks.picker.source.qf").qf(opts, ctx)
+						local index = 1
+
+						-- Keep original positions, including when identical entries appear more than once.
+						for _, item in ipairs(items) do
+							while index <= #quickfix.items do
+								local matches = vim.deep_equal(item.item, quickfix.items[index])
+								if matches then
+									item.quickfix_index = index
+								end
+								index = index + 1
+								if matches then
+									break
+								end
+							end
+						end
+
+						return items
+					end,
+					actions = {
+						remove_quickfix = function(picker)
+							local selected = picker:selected({ fallback = true })
+							if #selected == 0 then
+								return
+							end
+
+							local current = vim.fn.getqflist({ id = 0, changedtick = 0 })
+							if current.id ~= quickfix.id or current.changedtick ~= quickfix.changedtick then
+								vim.notify("Quickfix list changed; refreshed without removing entries.")
+								picker:refresh()
+								return
+							end
+
+							local remove = {}
+							for _, item in ipairs(selected) do
+								if item.quickfix_index then
+									remove[item.quickfix_index] = true
+								end
+							end
+
+							local remaining = {}
+							for index, item in ipairs(quickfix.items) do
+								if not remove[index] then
+									table.insert(remaining, item)
+								end
+							end
+
+							vim.fn.setqflist({}, "r", { id = quickfix.id, items = remaining })
+							picker:refresh()
+						end,
+					},
+					win = {
+						input = {
+							keys = {
+								["dd"] = { "remove_quickfix", mode = "n" },
+							},
+						},
+						list = {
+							keys = {
+								["dd"] = { "remove_quickfix", mode = "n" },
+							},
+						},
+					},
+				})
 			end,
 			desc = "Quickfix List",
 		},
