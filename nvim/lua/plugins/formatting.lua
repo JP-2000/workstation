@@ -26,6 +26,8 @@ return {
 				lua = { "stylua" },
 				markdown = { "mdformat" },
 				rust = { "rustfmt" },
+				terraform = { "tofu_fmt" },
+				["terraform-vars"] = { "tofu_fmt" },
 			},
 
 			formatters = {

@@ -20,7 +20,11 @@ return {
 			"odin",
 			"rust",
 			"toml",
+			"hcl",
 		})
+
+		-- Terraform configuration and variable files both use HCL syntax.
+		vim.treesitter.language.register("hcl", { "terraform", "terraform-vars" })
 
 		-- Installing a parser does not start highlighting; enable it when a matching file opens.
 		vim.api.nvim_create_autocmd("FileType", {
@@ -34,6 +38,9 @@ return {
 				"odin",
 				"rust",
 				"toml",
+				"hcl",
+				"terraform",
+				"terraform-vars",
 			},
 			callback = function()
 				vim.treesitter.start()

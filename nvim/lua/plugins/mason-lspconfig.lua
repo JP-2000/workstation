@@ -7,6 +7,7 @@ local lsp_servers = {
 	"pyright",
 	"texlab",
 	"ols",
+	"terraformls",
 }
 
 -- mason-tool-installer manages the separate formatters, linters, and debugging tools.
@@ -27,6 +28,15 @@ return {
 	},
 
 	config = function(_, opts)
+		-- Use the installed OpenTofu CLI instead of looking for Terraform.
+		vim.lsp.config("terraformls", {
+			init_options = {
+				terraform = {
+					path = "tofu",
+				},
+			},
+		})
+
 		-- Limit Python diagnostics to open files and use basic type checking.
 		vim.lsp.config("pyright", {
 			settings = {
