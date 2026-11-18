@@ -5,6 +5,49 @@
 -- Remember the explorer's hide-all toggle separately for each root directory.
 local hide_all = {}
 
+local function change_file_staging(file, stage)
+	if not file or file == "" or vim.fn.isdirectory(file) == 1 then
+		vim.notify("Choose a file to stage or unstage", vim.log.levels.WARN)
+		return
+	end
+
+	file = vim.fn.fnamemodify(file, ":p")
+	local directory = vim.fn.fnamemodify(file, ":h")
+	local command = { "git", "--literal-pathspecs" }
+
+	if stage then
+		vim.list_extend(command, { "add", "--", file })
+	else
+		vim.list_extend(command, { "restore", "--staged", "--", file })
+	end
+
+	vim.system(command, { cwd = directory, text = true }, function(result)
+		vim.schedule(function()
+			if result.code ~= 0 then
+				vim.notify(vim.trim(result.stderr or "Git command failed"), vim.log.levels.ERROR)
+				return
+			end
+
+			require("snacks.explorer.git").refresh(directory)
+			for _, explorer in ipairs(Snacks.picker.get({ source = "explorer", tab = false })) do
+				explorer:refresh()
+			end
+
+			local action = stage and "Staged: " or "Unstaged: "
+			vim.notify(action .. vim.fn.fnamemodify(file, ":t"))
+		end)
+	end)
+end
+
+local function change_buffer_staging(stage)
+	if vim.bo.buftype ~= "" then
+		vim.notify("Open a file buffer to stage or unstage", vim.log.levels.WARN)
+		return
+	end
+
+	change_file_staging(vim.api.nvim_buf_get_name(0), stage)
+end
+
 -- The dashboard uses image.nvim to draw this local image above its menu.
 local dashboard_image = vim.fn.expand("~/Pictures/neovim-dashboard-image.png")
 local dashboard_image_id = "snacks_dashboard_image"
@@ -235,6 +278,22 @@ return {
 			sources = {
 				explorer = {
 					actions = {
+						stage_file = function(_, item)
+							if item and not item.dir then
+								change_file_staging(item.file, true)
+							else
+								vim.notify("Choose a file to stage", vim.log.levels.WARN)
+							end
+						end,
+
+						unstage_file = function(_, item)
+							if item and not item.dir then
+								change_file_staging(item.file, false)
+							else
+								vim.notify("Choose a file to unstage", vim.log.levels.WARN)
+							end
+						end,
+
 						terminal_here = function(picker)
 							Snacks.terminal(nil, {
 								cwd = picker:dir(),
@@ -285,6 +344,8 @@ return {
 					win = {
 						list = {
 							keys = {
+								["<leader>ga"] = "stage_file",
+								["<leader>gA"] = "unstage_file",
 								["<c-/>"] = "terminal_here",
 								["<c-_>"] = "terminal_here",
 
@@ -440,7 +501,21 @@ return {
 			end,
 			desc = "Recent",
 		},
-		-- Browse Git branches, history, and changes.
+		-- Stage files and browse Git branches, history, and changes.
+		{
+			"<leader>ga",
+			function()
+				change_buffer_staging(true)
+			end,
+			desc = "Git Add File",
+		},
+		{
+			"<leader>gA",
+			function()
+				change_buffer_staging(false)
+			end,
+			desc = "Git Unstage File",
+		},
 		{
 			"<leader>gb",
 			function()
