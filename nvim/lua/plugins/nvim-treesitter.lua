@@ -21,6 +21,8 @@ return {
 			"rust",
 			"toml",
 			"hcl",
+			"markdown",
+			"markdown_inline",
 		})
 
 		-- Terraform configuration and variable files both use HCL syntax.
@@ -41,6 +43,7 @@ return {
 				"hcl",
 				"terraform",
 				"terraform-vars",
+				"markdown",
 			},
 			callback = function()
 				vim.treesitter.start()
