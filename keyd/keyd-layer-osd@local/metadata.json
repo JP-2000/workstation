@@ -1,0 +1,6 @@
+{
+  "uuid": "keyd-layer-osd@local",
+  "name": "keyd Layer OSD",
+  "description": "Show keyd keyboard layers using GNOME's built-in OSD.",
+  "shell-version": ["51"]
+}

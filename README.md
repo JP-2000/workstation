@@ -141,16 +141,37 @@ See `nvim/ODIN.md` and `nvim/PYTHON_DEBUGGING.md` for tool setup.
 
 ## keyd
 
-Includes the keyboard layers, layer notification script, and its user service.
-Notifications require GNOME's Custom OSD extension (`custom-osd@neuromorph`)
-to be installed and enabled. The listener also needs permission to run `keyd listen`.
+Includes the keyboard layers, layer OSD script, its user service, and a small
+local GNOME extension. The extension uses GNOME's built-in OSD to display NAV,
+UTILITY, and MAIN. It supports GNOME 51; future GNOME releases may require
+compatibility updates. Custom OSD is not required.
+
+The listener needs `gdbus` and permission to run `keyd listen`.
 
 Make sure the destination files do not already exist, then link the user files:
 
 ```sh
-mkdir -p "$HOME/.local/bin" "$HOME/.config/systemd/user"
+mkdir -p "$HOME/.local/bin" "$HOME/.config/systemd/user" "$HOME/.local/share/gnome-shell/extensions"
 ln -s "$HOME/dotfiles/keyd/keyd-layer-listener" "$HOME/.local/bin/keyd-layer-listener"
 ln -s "$HOME/dotfiles/keyd/keyd-layer-listener.service" "$HOME/.config/systemd/user/keyd-layer-listener.service"
+ln -s "$HOME/dotfiles/keyd/keyd-layer-osd@local" "$HOME/.local/share/gnome-shell/extensions/keyd-layer-osd@local"
+```
+
+Log out and back in so GNOME discovers the local extension, then enable it:
+
+```sh
+gnome-extensions enable keyd-layer-osd@local
+```
+
+If the old Custom OSD extension is installed, disable it in Extension Manager.
+Preview a layer from the terminal:
+
+```sh
+gdbus call --session \
+  --dest org.gnome.Shell \
+  --object-path /org/gnome/Shell/Extensions/KeydLayerOsd \
+  --method org.gnome.Shell.Extensions.KeydLayerOsd.ShowLayer \
+  NAV
 ```
 
 `keyd/default.conf` is a copy, not a symlink. With keyd installed, review it before
@@ -167,6 +188,19 @@ On a new machine, start the listener after installing its dependencies:
 ```sh
 systemctl --user daemon-reload
 systemctl --user enable --now keyd-layer-listener.service
+```
+
+If the listener was already running, restart it to load script changes:
+
+```sh
+systemctl --user restart keyd-layer-listener.service
+```
+
+Switch between the keyd layouts and confirm their labels appear. Volume and
+brightness continue to use GNOME's normal OSD. To inspect listener errors:
+
+```sh
+journalctl --user -u keyd-layer-listener.service -n 30 --no-pager
 ```
 
 Repeat the system config install and reload when changing `keyd/default.conf`.

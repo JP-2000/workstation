@@ -1,11 +1,11 @@
 #!/bin/bash
 
-OSD_SCHEMA="$HOME/.local/share/gnome-shell/extensions/custom-osd@neuromorph/schemas"
-
 show_osd() {
-    GSETTINGS_SCHEMA_DIR="$OSD_SCHEMA" \
-        gsettings set org.gnome.shell.extensions.custom-osd showosd \
-        "$RANDOM,,$1,"
+    gdbus call --session \
+        --dest org.gnome.Shell \
+        --object-path /org/gnome/Shell/Extensions/KeydLayerOsd \
+        --method org.gnome.Shell.Extensions.KeydLayerOsd.ShowLayer \
+        "$1" >/dev/null
 }
 
 keyd listen | while IFS= read -r line; do
